@@ -1,6 +1,6 @@
 import Foundation
-import DiagnosticsKit
-import WorkspaceKit
+import SwiftCodeDiagnostics
+import SwiftCodeWorkspace
 
 public struct BuildResult: Sendable {
     public let exitCode: Int32

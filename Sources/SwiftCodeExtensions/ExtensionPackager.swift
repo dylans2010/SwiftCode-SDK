@@ -1,7 +1,7 @@
 import Foundation
 import CryptoKit
-import DiagnosticsKit
-import WorkspaceKit
+import SwiftCodeDiagnostics
+import SwiftCodeWorkspace
 
 public struct ExtensionPackageInfo: Sendable, Codable {
     public let extensionId: String

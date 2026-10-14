@@ -1,5 +1,5 @@
 import Foundation
-import SwiftCodeSDK
+import SwiftCode
 
 let args = Array(CommandLine.arguments.dropFirst())
 guard !args.isEmpty else {

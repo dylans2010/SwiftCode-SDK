@@ -1,6 +1,6 @@
 import Foundation
-import DiagnosticsKit
-import WorkspaceKit
+import SwiftCodeDiagnostics
+import SwiftCodeWorkspace
 
 public enum GitError: Error, LocalizedError, Sendable {
     case notARepository(String)

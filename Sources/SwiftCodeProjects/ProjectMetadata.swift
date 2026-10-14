@@ -1,6 +1,6 @@
 import Foundation
-import DiagnosticsKit
-import WorkspaceKit
+import SwiftCodeDiagnostics
+import SwiftCodeWorkspace
 
 public enum ProjectType: String, Codable, Sendable, CaseIterable {
     case swiftPackage = "swift-package"

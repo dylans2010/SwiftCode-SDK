@@ -1,5 +1,5 @@
 import Foundation
-import DiagnosticsKit
+import SwiftCodeDiagnostics
 
 public struct WorkspacePath: Sendable, Hashable, CustomStringConvertible {
     public let rawPath: String

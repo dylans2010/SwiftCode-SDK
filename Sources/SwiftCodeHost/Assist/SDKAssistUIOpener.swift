@@ -62,7 +62,7 @@ public enum SDKAssistUIOpener {
             NotificationCenter.default.post(
                 name: NSNotification.Name("SelectSidebarItem"),
                 object: nil,
-                userInfo: ["item": MainSidebarItem.agent.rawValue]
+                userInfo: ["item": "agent"]
             )
         }
     }

@@ -1,4 +1,5 @@
 import Foundation
+import SwiftCodeCore
 
 public struct GitFileStatus: Codable, Sendable, Equatable {
     public enum StatusType: String, Codable, Sendable {
@@ -9,7 +10,10 @@ public struct GitFileStatus: Codable, Sendable, Equatable {
         case renamed = "renamed"
         case copied = "copied"
         case ignored = "ignored"
+        case conflicted = "conflicted"
     }
+
+    public typealias Status = StatusType
 
     public let path: String
     public let status: StatusType
@@ -19,6 +23,28 @@ public struct GitFileStatus: Codable, Sendable, Equatable {
         self.path = path
         self.status = status
         self.isStaged = isStaged
+    }
+}
+
+public struct GitStatusSnapshot: Sendable, Codable {
+    public let branchName: String
+    public let ahead: Int
+    public let behind: Int
+    public let files: [GitFileStatus]
+
+    public var stagedFiles: [GitFileStatus] {
+        files.filter { $0.isStaged }
+    }
+
+    public var unstagedFiles: [GitFileStatus] {
+        files.filter { !$0.isStaged }
+    }
+
+    public init(branchName: String, ahead: Int, behind: Int, files: [GitFileStatus]) {
+        self.branchName = branchName
+        self.ahead = ahead
+        self.behind = behind
+        self.files = files
     }
 }
 
@@ -93,5 +119,26 @@ public struct GitRemote: Codable, Sendable {
         self.name = name
         self.fetchURL = fetchURL
         self.pushURL = pushURL
+    }
+}
+
+public actor GitService {
+    public static let shared = GitService()
+    private let scService = SourceControlService()
+
+    public init() {}
+
+    public func getStatus(for repositoryURL: URL) async throws -> GitStatusSnapshot {
+        let status = try scService.getStatus(at: repositoryURL.path)
+        return GitStatusSnapshot(
+            branchName: status.currentBranch,
+            ahead: status.aheadCount,
+            behind: status.behindCount,
+            files: status.files
+        )
+    }
+
+    public func getDiff(repositoryURL: URL) async throws -> [GitDiffHunk] {
+        return []
     }
 }

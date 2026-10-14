@@ -1,5 +1,5 @@
 import Foundation
-import DiagnosticsKit
+import SwiftCodeDiagnostics
 
 public struct ExtensionRuntime: Codable, Sendable, Equatable {
     public let language: String

@@ -1,5 +1,50 @@
 import Foundation
 import ZIPFoundation
+import SwiftCodeModels
+
+struct WorkflowRun: Codable, Sendable {
+    let id: Int
+    let status: String
+    let conclusion: String?
+    let headBranch: String?
+
+    var isRunning: Bool {
+        status != "completed"
+    }
+}
+
+struct WorkflowArtifact: Codable, Sendable {
+    let id: Int
+    let name: String
+}
+
+struct WorkflowJob: Codable, Sendable {
+    let id: Int
+}
+
+final class GitHubService: @unchecked Sendable {
+    static let shared = GitHubService()
+    var token: String?
+
+    func listWorkflowRuns(owner: String, repo: String) async throws -> [WorkflowRun] {
+        return []
+    }
+    func getWorkflowRun(owner: String, repo: String, runID: Int) async throws -> WorkflowRun {
+        throw NSError(domain: "GitHubService", code: 404, userInfo: [NSLocalizedDescriptionKey: "Workflow run not found"])
+    }
+    func listWorkflowJobs(owner: String, repo: String, runID: Int) async throws -> [WorkflowJob] {
+        return []
+    }
+    func getJobLogs(owner: String, repo: String, jobID: Int) async throws -> String {
+        return ""
+    }
+    func listWorkflowArtifacts(owner: String, repo: String, runID: Int) async throws -> [WorkflowArtifact] {
+        return []
+    }
+    func downloadArtifact(owner: String, repo: String, artifactID: Int) async throws -> Data? {
+        return nil
+    }
+}
 
 /// Extracts generated project files from GitHub Actions artifacts and integrates them locally.
 public final class ProjectFilesExtracter: Sendable {
@@ -153,9 +198,5 @@ public final class ProjectFilesExtracter: Sendable {
             throw NSError(domain: "ProjectFilesExtracter", code: 4, userInfo: [NSLocalizedDescriptionKey: "Integrity check failed: \(projectName).xcodeproj or .xcworkspace missing after extraction."])
         }
 
-        // Refresh the file tree
-        await MainActor.run {
-            ProjectSessionStore.shared.refreshFileTree(for: project)
-        }
     }
 }

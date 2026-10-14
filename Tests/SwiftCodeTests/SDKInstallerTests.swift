@@ -190,7 +190,7 @@ final class SDKInstallerTests: XCTestCase {
 
     func testRealBundledTarballInstallsAndImports() async throws {
         guard let source = ProcessInfo.processInfo.environment["SWIFTCODE_TEST_SDK_TARBALL"] else {
-            throw NSError(domain: "SDKInstallerTests", code: 1, userInfo: [NSLocalizedDescriptionKey: "Set SWIFTCODE_TEST_SDK_TARBALL to the release archive"])
+            throw XCTSkip("Set SWIFTCODE_TEST_SDK_TARBALL to the release archive")
         }
         var options = SDKInstaller.InstallOptions()
         options.prefix = prefix
@@ -209,7 +209,9 @@ final class SDKInstallerTests: XCTestCase {
     }
 
     func testRealRemoteDownloadOrBundledFallbackImports() async throws {
-        let source = try XCTUnwrap(ProcessInfo.processInfo.environment["SWIFTCODE_TEST_SDK_TARBALL"])
+        guard let source = ProcessInfo.processInfo.environment["SWIFTCODE_TEST_SDK_TARBALL"] else {
+            throw XCTSkip("Set SWIFTCODE_TEST_SDK_TARBALL to the release archive")
+        }
         var options = SDKInstaller.InstallOptions()
         options.prefix = prefix
         options.bundledFallbackURL = URL(fileURLWithPath: source)

@@ -1,4 +1,6 @@
 import Foundation
+import SwiftCodeCore
+import SwiftCodeSourceControl
 
 // MARK: - SDKSourceControlAdapter
 //
@@ -54,13 +56,40 @@ public actor SDKSourceControlAdapter {
 
     private init() {}
 
+    private nonisolated func runProcess(
+        executableURL: URL,
+        arguments: [String],
+        workingDirectory: URL
+    ) async -> (exitCode: Int32, stdout: String)? {
+        await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                let process = Process()
+                process.executableURL = executableURL
+                process.arguments = arguments
+                process.currentDirectoryURL = workingDirectory
+                let pipe = Pipe()
+                process.standardOutput = pipe
+                process.standardError = Pipe()
+                do {
+                    try process.run()
+                    let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                    process.waitUntilExit()
+                    let out = String(data: data, encoding: .utf8) ?? ""
+                    continuation.resume(returning: (exitCode: process.terminationStatus, stdout: out))
+                } catch {
+                    continuation.resume(returning: nil)
+                }
+            }
+        }
+    }
+
     // MARK: - Repository probe (no broker check; host UI uses this too)
 
     /// True when `projectRoot` is inside a git working tree. Runs
     /// `git rev-parse --is-inside-work-tree` and returns true only on exit 0
     /// with stdout trimming to "true". Never throws; any failure is false.
     public func isRepository(at projectRoot: URL) async -> Bool {
-        guard let result = try? await ProcessRunnerTool.shared.run(
+        guard let result = await runProcess(
             executableURL: await gitExecutableURL(),
             arguments: ["rev-parse", "--is-inside-work-tree"],
             workingDirectory: projectRoot
@@ -94,8 +123,8 @@ public actor SDKSourceControlAdapter {
                 try await GitService.shared.getStatus(for: projectRoot)
             }
             return mapStatus(snapshot, root: projectRoot)
-        } catch let appError as AppError {
-            throw mapGitError(appError)
+        } catch {
+            throw mapGitError(error)
         }
     }
 
@@ -125,8 +154,8 @@ public actor SDKSourceControlAdapter {
                 return try await (diffHunks, nameOrder)
             }
             return assembleDiff(from: hunks, maxBytes: options.maxBytes, pathOrderFallback: pathOrder)
-        } catch let appError as AppError {
-            throw mapGitError(appError)
+        } catch {
+            throw mapGitError(error)
         }
     }
 
@@ -166,28 +195,35 @@ public actor SDKSourceControlAdapter {
     private func mapFileStatus(_ status: GitFileStatus.Status) -> SDKFileChangeStatus {
         switch status {
         case .modified: return .modified
-        case .added: return .added
+        case .added, .copied: return .added
         case .deleted: return .deleted
         case .renamed: return .renamed
-        case .untracked: return .untracked
+        case .untracked, .ignored: return .untracked
         case .conflicted: return .conflicted
         }
     }
 
-    /// Rewrites an absolute file URL to a repository-relative path. Never
+    /// Rewrites an absolute file path or URL to a repository-relative path. Never
     /// returns an absolute path: anything that cannot be relativized
     /// degrades to the bare filename.
-    private func repoRelativePath(_ fileURL: URL, root: URL) -> String {
+    private func repoRelativePath(_ filePath: String, root: URL) -> String {
         let rootPath = root.path
-        let path = fileURL.standardized.path
+        let path = filePath.hasPrefix("/") ? URL(fileURLWithPath: filePath).standardized.path : filePath
         if path == rootPath {
-            return fileURL.lastPathComponent
+            return URL(fileURLWithPath: path).lastPathComponent
         }
         let prefix = rootPath.hasSuffix("/") ? rootPath : rootPath + "/"
         if path.hasPrefix(prefix) {
             return String(path.dropFirst(prefix.count))
         }
-        return fileURL.lastPathComponent
+        if !path.hasPrefix("/") {
+            return path
+        }
+        return URL(fileURLWithPath: path).lastPathComponent
+    }
+
+    private func repoRelativePath(_ fileURL: URL, root: URL) -> String {
+        repoRelativePath(fileURL.standardized.path, root: root)
     }
 
     // MARK: - Diff assembly (bounded)
@@ -429,14 +465,8 @@ public actor SDKSourceControlAdapter {
     /// Maps `AppError.gitError` to typed `SDKError`s. `SDKError`s from the
     /// broker (permission denials etc.) pass through untouched — this catch
     /// only ever sees `AppError`.
-    private func mapGitError(_ error: AppError) -> SDKError {
-        guard case .gitError(let stderr) = error else {
-            return SDKError(
-                code: .serviceUnavailable,
-                message: "Source control is temporarily unavailable.",
-                suggestion: "Try again in a moment."
-            )
-        }
+    private func mapGitError(_ error: Error) -> SDKError {
+        let stderr = error.localizedDescription
         let lowered = stderr.lowercased()
 
         if lowered.contains("not a git repository") {
@@ -480,7 +510,7 @@ public actor SDKSourceControlAdapter {
     /// timeout race. Best-effort: empty on any failure, and the caller only
     /// applies it positionally when the counts match the regrouped files.
     private nonisolated func diffPathOrder(root: URL) async -> [String] {
-        guard let result = try? await ProcessRunnerTool.shared.run(
+        guard let result = await self.runProcess(
             executableURL: await self.gitExecutableURL(),
             arguments: ["diff", "--name-only"],
             workingDirectory: root
@@ -506,7 +536,7 @@ public actor SDKSourceControlAdapter {
     /// common install paths) because that lookup is private to `GitService`.
     /// If `GitService`'s resolution ever changes, revisit this.
     private func gitExecutableURL() async -> URL {
-        if let customPath = await PreferencesStore.shared.get(forKey: "git_executable_path") as? String,
+        if let customPath = UserDefaults.standard.string(forKey: "git_executable_path"),
            !customPath.isEmpty {
             return URL(fileURLWithPath: customPath)
         }

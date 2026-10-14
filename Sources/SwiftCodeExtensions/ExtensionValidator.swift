@@ -1,6 +1,6 @@
 import Foundation
-import DiagnosticsKit
-import WorkspaceKit
+import SwiftCodeDiagnostics
+import SwiftCodeWorkspace
 
 public final class ExtensionValidator: Sendable {
     public init() {}

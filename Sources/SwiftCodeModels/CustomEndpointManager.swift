@@ -1,19 +1,32 @@
 import Foundation
 import SwiftUI
 import Observation
+import SwiftCodeCore
 
-struct SavedCustomEndpoint: Identifiable, Codable, Equatable {
-    var id = UUID()
-    var name: String
-    var endpoint: String
-    var apiKey: String = ""
-    var headers: [HeaderItem] = []
-    var models: [String] = []
-    var showInPopup: Bool = true
-    var isLocal: Bool = false
-    var localPort: String = ""
+public struct HeaderItem: Identifiable, Codable, Equatable, Sendable {
+    public var id: UUID
+    public var key: String
+    public var value: String
 
-    init(id: UUID = UUID(), name: String, endpoint: String, apiKey: String = "", headers: [HeaderItem] = [], models: [String] = [], showInPopup: Bool = true, isLocal: Bool = false, localPort: String = "") {
+    public init(id: UUID = UUID(), key: String = "", value: String = "") {
+        self.id = id
+        self.key = key
+        self.value = value
+    }
+}
+
+public struct SavedCustomEndpoint: Identifiable, Codable, Equatable, Sendable {
+    public var id = UUID()
+    public var name: String
+    public var endpoint: String
+    public var apiKey: String = ""
+    public var headers: [HeaderItem] = []
+    public var models: [String] = []
+    public var showInPopup: Bool = true
+    public var isLocal: Bool = false
+    public var localPort: String = ""
+
+    public init(id: UUID = UUID(), name: String, endpoint: String, apiKey: String = "", headers: [HeaderItem] = [], models: [String] = [], showInPopup: Bool = true, isLocal: Bool = false, localPort: String = "") {
         self.id = id
         self.name = name
         self.endpoint = endpoint
@@ -28,15 +41,17 @@ struct SavedCustomEndpoint: Identifiable, Codable, Equatable {
 
 @Observable
 @MainActor
-final class CustomEndpointManager {
-    static let shared = CustomEndpointManager()
+public final class CustomEndpointManager {
+    public static let shared = CustomEndpointManager()
 
-    var endpoints: [SavedCustomEndpoint] = [] {
+    public var onEndpointsChanged: (@Sendable () async -> Void)?
+
+    public var endpoints: [SavedCustomEndpoint] = [] {
         didSet {
             save()
-            // M-4: endpoint edits change the model catalog — refresh discovery
-            // so added/removed endpoints are reflected immediately.
-            Task { await AssistModelDiscoveryService.shared.discoverAllModels(forceRefresh: true) }
+            if let callback = onEndpointsChanged {
+                Task { await callback() }
+            }
         }
     }
 

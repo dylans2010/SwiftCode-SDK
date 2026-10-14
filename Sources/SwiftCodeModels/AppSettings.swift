@@ -46,8 +46,8 @@ enum FileNavigatorAnimationStyle: String, Codable, CaseIterable {
 }
 
 @MainActor
-class AppSettings: ObservableObject {
-    static let shared = AppSettings()
+public final class AppSettings: ObservableObject, @unchecked Sendable {
+    public static let shared = AppSettings()
 
     public static let nativeAssistSystemID = "com.swiftcode.assist.native"
     public static let googleCloudAssistSystemID = "com.swiftcode.Assist.Google-Cloud"
@@ -85,9 +85,7 @@ class AppSettings: ObservableObject {
             debouncedSave("alternativeKeysEnabled", alternativeKeysEnabled)
             UserDefaults.standard.set(alternativeKeysEnabled, forKey: "assist.alternativeKeysEnabled")
             // M-4: toggling key rotation changes which credentials back the
-            // Google provider — drop the discovery cache so a removed key
-            // stops advertising its models immediately.
-            Task { await AssistModelDiscoveryService.shared.discoverAllModels(forceRefresh: true) }
+            NotificationCenter.default.post(name: Notification.Name("com.swiftcode.assist.refreshModels"), object: nil)
         }
     }
 
@@ -277,16 +275,16 @@ class AppSettings: ObservableObject {
     }
 
     // MARK: - CoreML
-    @Published var coreMLEnabled: Bool {
+    @Published public var coreMLEnabled: Bool {
         didSet { debouncedSave("coreMLEnabled", coreMLEnabled) }
     }
-    @Published var coreMLHybridMode: Bool {
+    @Published public var coreMLHybridMode: Bool {
         didSet { debouncedSave("coreMLHybridMode", coreMLHybridMode) }
     }
-    @Published var coreMLSelectedModel: String {
+    @Published public var coreMLSelectedModel: String {
         didSet { debouncedSave("coreMLSelectedModel", coreMLSelectedModel) }
     }
-    @Published var coreMLUsageLimit: Double {
+    @Published public var coreMLUsageLimit: Double {
         didSet { debouncedSave("coreMLUsageLimit", coreMLUsageLimit) }
     }
 
@@ -462,20 +460,11 @@ class AppSettings: ObservableObject {
         defaultOrganization = UserDefaults.standard.string(forKey: "defaultOrganization") ?? "com.SwiftCode"
 
         // Initialize sound preferences with graceful migration
-        let rawNotif = UserDefaults.standard.string(forKey: "notificationSoundID") ?? SoundCatalog.notificationA.id
-        notificationSoundID = (rawNotif == SoundCatalog.noneSoundID || SoundCatalog.sound(for: rawNotif) != nil) ? rawNotif : SoundCatalog.notificationA.id
-
-        let rawMsg = UserDefaults.standard.string(forKey: "messageSoundID") ?? SoundCatalog.messageA.id
-        messageSoundID = (rawMsg == SoundCatalog.noneSoundID || SoundCatalog.sound(for: rawMsg) != nil) ? rawMsg : SoundCatalog.messageA.id
-
-        let rawSuccess = UserDefaults.standard.string(forKey: "successSoundID") ?? SoundCatalog.successA.id
-        successSoundID = (rawSuccess == SoundCatalog.noneSoundID || SoundCatalog.sound(for: rawSuccess) != nil) ? rawSuccess : SoundCatalog.successA.id
-
-        let rawError = UserDefaults.standard.string(forKey: "errorSoundID") ?? SoundCatalog.errorA.id
-        errorSoundID = (rawError == SoundCatalog.noneSoundID || SoundCatalog.sound(for: rawError) != nil) ? rawError : SoundCatalog.errorA.id
-
-        let rawComplete = UserDefaults.standard.string(forKey: "completionSoundID") ?? SoundCatalog.completeA.id
-        completionSoundID = (rawComplete == SoundCatalog.noneSoundID || SoundCatalog.sound(for: rawComplete) != nil) ? rawComplete : SoundCatalog.completeA.id
+        notificationSoundID = UserDefaults.standard.string(forKey: "notificationSoundID") ?? "default"
+        messageSoundID = UserDefaults.standard.string(forKey: "messageSoundID") ?? "default"
+        successSoundID = UserDefaults.standard.string(forKey: "successSoundID") ?? "default"
+        errorSoundID = UserDefaults.standard.string(forKey: "errorSoundID") ?? "default"
+        completionSoundID = UserDefaults.standard.string(forKey: "completionSoundID") ?? "default"
 
         // Load saved repositories
         loadSavedRepositories()

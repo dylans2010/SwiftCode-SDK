@@ -1,55 +1,61 @@
 import Foundation
+import SwiftCodeModels
 
 // MARK: - Project Template
 
-struct ProjectTemplate: Identifiable {
-    let id: String
-    var name: String
-    var description: String
-    var icon: String
-    var iconColor: String
-    var files: [TemplateFile]
-    var tags: [String]
+public struct ProjectTemplate: Identifiable, @unchecked Sendable {
+    public let id: String
+    public var name: String
+    public var description: String
+    public var icon: String
+    public var iconColor: String
+    public var files: [TemplateFile]
+    public var tags: [String]
 
-    struct TemplateFile {
-        var relativePath: String
-        var content: (String) -> String // takes project name, returns content
+    public struct TemplateFile: @unchecked Sendable {
+        public var relativePath: String
+        public var content: (String) -> String // takes project name, returns content
+
+        public init(relativePath: String, content: @escaping (String) -> String) {
+            self.relativePath = relativePath
+            self.content = content
+        }
+    }
+
+    public init(id: String, name: String, description: String, icon: String, iconColor: String, files: [TemplateFile], tags: [String]) {
+        self.id = id
+        self.name = name
+        self.description = description
+        self.icon = icon
+        self.iconColor = iconColor
+        self.files = files
+        self.tags = tags
     }
 }
 
 // MARK: - Project Template Manager
 
 @MainActor
-final class ProjectTemplateManager: ObservableObject {
-    static let shared = ProjectTemplateManager()
+public final class ProjectTemplateManager: ObservableObject, @unchecked Sendable {
+    public static let shared = ProjectTemplateManager()
 
-    let templates: [ProjectTemplate] = ProjectTemplateManager.buildTemplates()
+    public let templates: [ProjectTemplate] = ProjectTemplateManager.buildTemplates()
 
     private init() {}
 
     // MARK: - Apply Template
 
-    func applyTemplate(_ template: ProjectTemplate, to project: Project) throws {
+    public func applyTemplate(_ template: ProjectTemplate, to project: Project) throws {
+        let fm = FileManager.default
         for file in template.files {
             let content = file.content(project.name)
-            let components = file.relativePath.components(separatedBy: "/")
-            let fileName = components.last ?? file.relativePath
-            let directory = components.dropLast().joined(separator: "/")
-            let dirPath: String? = directory.isEmpty ? nil : directory
+            let fileURL = project.directoryURL.appendingPathComponent(file.relativePath)
+            let parentDir = fileURL.deletingLastPathComponent()
 
-            if content == "__DIRECTORY__" {
-                try ProjectSessionStore.shared.createFolder(
-                    named: fileName,
-                    inDirectory: dirPath,
-                    project: project
-                )
-            } else {
-                try ProjectSessionStore.shared.createFile(
-                    named: fileName,
-                    inDirectory: dirPath,
-                    project: project,
-                    initialContent: content
-                )
+            try fm.createDirectory(at: parentDir, withIntermediateDirectories: true)
+
+            if content != "__DIRECTORY__" {
+                try content.write(to: fileURL, atomically: true, encoding: .utf8)
             }
         }
     }

@@ -1,5 +1,5 @@
 import Foundation
-import DiagnosticsKit
+import SwiftCodeDiagnostics
 
 public enum WorkspaceError: Error, LocalizedError, Sendable {
     case pathNotFound(String)

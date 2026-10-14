@@ -1,5 +1,5 @@
 import Foundation
-import DiagnosticsKit
+import SwiftCodeDiagnostics
 
 public struct DeveloperToolInfo: Codable, Sendable {
     public let name: String
@@ -19,6 +19,10 @@ public final class Toolchain: Sendable {
     public init() {}
 
     public static let standard = Toolchain()
+
+    public var xcodebuildPath: String? {
+        resolveExecutable(name: "xcodebuild")
+    }
 
     public func discoverTools() -> [String: DeveloperToolInfo] {
         var tools: [String: DeveloperToolInfo] = [:]

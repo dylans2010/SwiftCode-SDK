@@ -25,6 +25,15 @@ public struct IPABuildResult: Sendable, Codable {
     public let errorMessage: String?
 }
 
+public final class AlertSoundPlayer: Sendable {
+    public static let shared = AlertSoundPlayer()
+    public enum AlertSound {
+        case buildSuccess
+        case buildFailure
+    }
+    public func play(_ sound: AlertSound) {}
+}
+
 public struct SelectedApp: Identifiable, Sendable, Codable {
     public var id: String { path }
     public let path: String

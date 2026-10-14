@@ -115,7 +115,8 @@ public struct Project: Identifiable, Codable, @unchecked Sendable {
         if name.hasPrefix("/") {
             return URL(fileURLWithPath: name)
         }
-        return CodingManager.shared.projectsRoot.appendingPathComponent(name)
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first ?? URL(fileURLWithPath: NSHomeDirectory())
+        return appSupport.appendingPathComponent("SwiftCode/Projects").appendingPathComponent(name)
     }
 
     public var displayName: String {
@@ -131,6 +132,32 @@ public struct Project: Identifiable, Codable, @unchecked Sendable {
     public var fileCount: Int = 0
 }
 
+public enum TransferPermission: String, Codable, Hashable, Sendable {
+    case owner
+    case fullAccess
+    case limitedEdit
+    case readOnly
+}
+
+public struct TransferAuditEntry: Identifiable, Codable, Hashable, Sendable {
+    public let id: UUID
+    public let timestamp: Date
+    public let actor: String
+    public let action: String
+    public let path: String?
+    public let allowed: Bool
+    public let detail: String
+
+    public init(id: UUID = UUID(), timestamp: Date = Date(), actor: String = "", action: String = "", path: String? = nil, allowed: Bool = true, detail: String = "") {
+        self.id = id
+        self.timestamp = timestamp
+        self.actor = actor
+        self.action = action
+        self.path = path
+        self.allowed = allowed
+        self.detail = detail
+    }
+}
 
 public struct ProjectTransferConfiguration: Codable, Hashable, Sendable {
     public var originPeerID: String?
@@ -139,7 +166,7 @@ public struct ProjectTransferConfiguration: Codable, Hashable, Sendable {
     public var lastTransferDate: Date?
     public var auditLog: [TransferAuditEntry]
 
-    public init(originPeerID: String? = nil, permission: TransferPermission, lastTransferSessionID: UUID? = nil, lastTransferDate: Date? = nil, auditLog: [TransferAuditEntry] = []) {
+    public init(originPeerID: String? = nil, permission: TransferPermission = .owner, lastTransferSessionID: UUID? = nil, lastTransferDate: Date? = nil, auditLog: [TransferAuditEntry] = []) {
         self.originPeerID = originPeerID
         self.permission = permission
         self.lastTransferSessionID = lastTransferSessionID
@@ -155,3 +182,4 @@ extension Project: Equatable {
         return lhs.id == rhs.id
     }
 }
+

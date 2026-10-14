@@ -1,6 +1,6 @@
 import Foundation
-import DiagnosticsKit
-import WorkspaceKit
+import SwiftCodeDiagnostics
+import SwiftCodeWorkspace
 
 public struct ProjectGeneratorOptions: Sendable {
     public let type: ProjectType

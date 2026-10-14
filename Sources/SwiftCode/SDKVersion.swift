@@ -1,12 +1,12 @@
 import Foundation
-import DiagnosticsKit
-import WorkspaceKit
-import ProjectKit
-import BuildKit
-import SourceControlKit
-import ExtensionKit
+import SwiftCodeDiagnostics
+import SwiftCodeWorkspace
+import SwiftCodeProjects
+import SwiftCodeBuild
+import SwiftCodeSourceControl
+import SwiftCodeExtensions
 
-public struct SDKVersion: Sendable, CustomStringConvertible {
+public struct SDKVersion: Sendable, CustomStringConvertible, Equatable, Codable {
     public static let current = SDKVersion(major: 1, minor: 0, patch: 0)
 
     public let major: Int

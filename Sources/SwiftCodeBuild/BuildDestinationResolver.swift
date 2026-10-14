@@ -45,14 +45,29 @@ public final class BuildDestinationResolver {
         public let workspaceOrProject: URL
     }
 
+    private func runCommand(executablePath: String, arguments: [String], workingDirectory: URL) async throws -> (exitCode: Int32, stdout: String) {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: executablePath)
+        process.arguments = arguments
+        process.currentDirectoryURL = workingDirectory
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = pipe
+        try process.run()
+        process.waitUntilExit()
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        let stdout = String(data: data, encoding: .utf8) ?? ""
+        return (process.terminationStatus, stdout)
+    }
+
     /// Queries xcodebuild -showBuildSettings to resolve platform details
     public func resolveSettings(for projectURL: URL, scheme: String) async throws -> ResolvedSettings {
-        let xcodebuildPath = XcodeBuildManager.shared.getXcodeBuildPath()
+        let xcodebuildPath = Toolchain.standard.xcodebuildPath ?? "/usr/bin/xcodebuild"
         let projectArgKey = projectURL.pathExtension == "xcworkspace" ? "-workspace" : "-project"
 
         do {
-            let result = try await ProcessRunnerTool.shared.run(
-                executableURL: URL(fileURLWithPath: xcodebuildPath),
+            let result = try await runCommand(
+                executablePath: xcodebuildPath,
                 arguments: [
                     projectArgKey, projectURL.path,
                     "-scheme", scheme,
@@ -112,19 +127,9 @@ public final class BuildDestinationResolver {
     }
 
     private func resolveSettingsFallback(for projectURL: URL, scheme: String) throws -> ResolvedSettings {
-        var supportedPlatforms = ["macosx"]
-        var baseSDK = "macosx"
-        var deploymentTarget = "15.0"
-
-        if let project = ProjectSessionStore.shared.activeProject {
-            if let targetPlatform = project.ciBuildConfiguration?.platform.rawValue {
-                if targetPlatform.lowercased().contains("ios") {
-                    supportedPlatforms = ["iphonesimulator", "iphoneos"]
-                    baseSDK = "iphonesimulator"
-                    deploymentTarget = "16.0"
-                }
-            }
-        }
+        let supportedPlatforms = ["macosx"]
+        let baseSDK = "macosx"
+        let deploymentTarget = "15.0"
 
         return ResolvedSettings(
             supportedPlatforms: supportedPlatforms,
@@ -137,14 +142,14 @@ public final class BuildDestinationResolver {
 
     /// Queries xcodebuild -showdestinations and filters them based on active platforms
     public func resolveDestinations(for projectURL: URL, scheme: String, settings: ResolvedSettings) async -> [ResolvedDestination] {
-        let xcodebuildPath = XcodeBuildManager.shared.getXcodeBuildPath()
+        let xcodebuildPath = Toolchain.standard.xcodebuildPath ?? "/usr/bin/xcodebuild"
         let projectArgKey = projectURL.pathExtension == "xcworkspace" ? "-workspace" : "-project"
 
         var destinations: [ResolvedDestination] = []
 
         do {
-            let result = try await ProcessRunnerTool.shared.run(
-                executableURL: URL(fileURLWithPath: xcodebuildPath),
+            let result = try await runCommand(
+                executablePath: xcodebuildPath,
                 arguments: [
                     projectArgKey, projectURL.path,
                     "-scheme", scheme,

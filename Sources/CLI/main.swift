@@ -1,5 +1,5 @@
 import Foundation
-import SwiftCodeSDK
+import SwiftCode
 
 @main
 struct SwiftCodeSDKCLI {

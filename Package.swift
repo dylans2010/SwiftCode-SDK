@@ -59,7 +59,13 @@ let package = Package(
         ),
         .target(
             name: "SwiftCodeProjects",
-            dependencies: ["SwiftCodeCore", "SwiftCodeModels", "SwiftCodeWorkspace", "SwiftCodeDiagnostics"],
+            dependencies: [
+                "SwiftCodeCore",
+                "SwiftCodeModels",
+                "SwiftCodeWorkspace",
+                "SwiftCodeDiagnostics",
+                .product(name: "ZIPFoundation", package: "ZIPFoundation")
+            ],
             path: "Sources/SwiftCodeProjects"
         ),
         .target(
@@ -103,7 +109,13 @@ let package = Package(
                 "SwiftCodeExtensions",
                 "SwiftCodeAI"
             ],
-            path: "Sources/SwiftCodeHost"
+            path: "Sources/SwiftCodeHost",
+            exclude: [
+                "Contracts/Manifest/ExampleManifests/repository-build-extension.swiftcode.json",
+                "Contracts/Manifest/swiftcode-extension-v1.schema.json",
+                "Internal/SDKConfigStore/SwiftCodeSDK.json",
+                "ServiceAdapters/Terminal/sandbox_validation_test.py"
+            ]
         ),
         // Primary facade module: import SwiftCode
         .target(

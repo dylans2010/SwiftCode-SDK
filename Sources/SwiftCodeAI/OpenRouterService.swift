@@ -1,5 +1,6 @@
 import Foundation
 import os
+import SwiftCodeCore
 
 private let logger = Logger(subsystem: "com.swiftcode.app", category: "OpenRouterService")
 
@@ -18,13 +19,7 @@ final class OpenRouterService: Sendable {
         model: String,
         systemPrompt: String
     ) async throws -> String {
-        logger.log("[chat] Centralizing request through LLMService.")
-        return try await LLMService.shared.generateResponse(
-            prompt: messages.last?.content ?? "",
-            useContext: true,
-            modelOverride: model,
-            providerOverride: .openRouter
-        )
+        return try await chatDirect(messages: messages, model: model, systemPrompt: systemPrompt)
     }
 
     func chatDirect(
@@ -109,7 +104,6 @@ final class OpenRouterService: Sendable {
             let errorBody = String(data: data, encoding: .utf8) ?? "Unknown error"
             let msg = "[OpenRouter API Error] Status: \(httpResponse.statusCode). Response: \(errorBody)"
             logger.error("\(msg)")
-            InternalLoggingManager.shared.log("[ERROR] \(msg)", category: .aiProcessing)
             throw OpenRouterError.apiError(statusCode: httpResponse.statusCode, body: errorBody)
         }
 
@@ -135,8 +129,7 @@ final class OpenRouterService: Sendable {
         systemPrompt: String,
         onToken: @escaping @Sendable (String) async -> Void
     ) async throws {
-        logger.log("[streamChat] Centralizing streaming request through LLMService.")
-        try await LLMService.shared.streamChat(
+        try await streamChatDirect(
             messages: messages,
             model: model,
             systemPrompt: systemPrompt,
@@ -238,7 +231,6 @@ final class OpenRouterService: Sendable {
             let errorBody = String(data: bodyData, encoding: .utf8) ?? "Unknown error"
             let msg = "[OpenRouter Stream API Error] Status: \(httpResponse.statusCode). Response: \(errorBody)"
             logger.error("\(msg)")
-            InternalLoggingManager.shared.log("[ERROR] \(msg)", category: .aiProcessing)
             throw OpenRouterError.apiError(statusCode: httpResponse.statusCode, body: errorBody)
         }
 

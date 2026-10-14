@@ -1,5 +1,5 @@
 import Foundation
-import DiagnosticsKit
+import SwiftCodeDiagnostics
 
 public final class BuildDiagnosticsParser: Sendable {
     public init() {}

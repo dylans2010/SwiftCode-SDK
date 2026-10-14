@@ -80,16 +80,19 @@ public final class FoundationModels: Sendable {
         }
 
         #if canImport(FoundationModels)
-        logger.log("[generatePrivateResponse] Creating generation session (Native).")
-        let session = LanguageModelSession(model: SystemLanguageModel())
+        if #available(macOS 26.0, *) {
+            logger.log("[generatePrivateResponse] Creating generation session (Native).")
+            let session = LanguageModelSession(model: SystemLanguageModel())
 
-        logger.log("[generatePrivateResponse] Starting native generation request.")
-        let response = try await session.respond(to: prompt)
+            logger.log("[generatePrivateResponse] Starting native generation request.")
+            let response = try await session.respond(to: prompt)
 
-        let duration = Date().timeIntervalSince(startTime)
-        logger.log("[generatePrivateResponse] Native generation completed. Duration: \(duration)s.")
-        return response.content
-        #else
+            let duration = Date().timeIntervalSince(startTime)
+            logger.log("[generatePrivateResponse] Native generation completed. Duration: \(duration)s.")
+            return response.content
+        }
+        #endif
+
         logger.log("[generatePrivateResponse] Creating generation session (Simulation).")
         try await Task.sleep(nanoseconds: 300_000_000) // Realistic delay
 
@@ -127,7 +130,6 @@ public final class FoundationModels: Sendable {
         let duration = Date().timeIntervalSince(startTime)
         logger.log("[generatePrivateResponse] Simulation generation completed. Duration: \(duration)s.")
         return finalResponse
-        #endif
     }
 
     /// Executes streaming language processing using native or simulated response generation.

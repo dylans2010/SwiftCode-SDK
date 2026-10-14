@@ -432,6 +432,12 @@ public actor SDKAssistApplicationStore {
 
     // MARK: - Reading
 
+    private static var decoder: JSONDecoder {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return decoder
+    }
+
     /// Returns all application records, newest first.
     public func list() -> [SDKAssistApplication] {
         guard let accounts = try? SDKKeychain.accountNames(withPrefix: Self.applicationAccountPrefix) else {
@@ -441,7 +447,7 @@ public actor SDKAssistApplicationStore {
         for account in accounts {
             if let value = try? SDKKeychain.get(forKey: account),
                let data = value.data(using: .utf8),
-               let application = try? JSONDecoder().decode(SDKAssistApplication.self, from: data)
+               let application = try? Self.decoder.decode(SDKAssistApplication.self, from: data)
             {
                 applications.append(application)
             }
@@ -497,7 +503,7 @@ public actor SDKAssistApplicationStore {
         }
         guard let json = stored,
               let data = json.data(using: .utf8),
-              let application = try? JSONDecoder().decode(SDKAssistApplication.self, from: data)
+              let application = try? Self.decoder.decode(SDKAssistApplication.self, from: data)
         else {
             throw SDKError(
                 code: .invalidArgument,

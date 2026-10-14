@@ -1,7 +1,7 @@
 import Foundation
-import DiagnosticsKit
-import BuildKit
-import WorkspaceKit
+import SwiftCodeDiagnostics
+import SwiftCodeBuild
+import SwiftCodeWorkspace
 
 public struct ToolCheckResult: Sendable {
     public let name: String
