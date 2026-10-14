@@ -8,20 +8,8 @@ let package = Package(
         .macOS(.v14)
     ],
     products: [
-        // Primary importable library product: import SwiftCode
+        // The unified SwiftCode framework: import SwiftCode provides everything (ExtensionKit, SourceControl, Projects, Build, etc.)
         .library(name: "SwiftCode", targets: ["SwiftCode"]),
-
-        // Sub-libraries for modular access
-        .library(name: "SwiftCodeCore", targets: ["SwiftCodeCore"]),
-        .library(name: "SwiftCodeModels", targets: ["SwiftCodeModels"]),
-        .library(name: "SwiftCodeDiagnostics", targets: ["SwiftCodeDiagnostics"]),
-        .library(name: "SwiftCodeWorkspace", targets: ["SwiftCodeWorkspace"]),
-        .library(name: "SwiftCodeProjects", targets: ["SwiftCodeProjects"]),
-        .library(name: "SwiftCodeBuild", targets: ["SwiftCodeBuild"]),
-        .library(name: "SwiftCodeSourceControl", targets: ["SwiftCodeSourceControl"]),
-        .library(name: "SwiftCodeExtensions", targets: ["SwiftCodeExtensions"]),
-        .library(name: "SwiftCodeAI", targets: ["SwiftCodeAI"]),
-        .library(name: "SwiftCodeHost", targets: ["SwiftCodeHost"]),
 
         // Tool Executables
         .executable(name: "swiftcode-sdk", targets: ["CLI"]),
