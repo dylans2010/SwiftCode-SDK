@@ -1,0 +1,17 @@
+.DS_Store
+/.build/
+/Packages
+/build/
+*.xcodeproj
+*.xcworkspace
+*.dSYM
+node_modules/
+dist/
+*.log
+.swiftpm/
+*.zip
+*.tar.gz
+*.a
+*.dylib
+*.so
+Distribution/
