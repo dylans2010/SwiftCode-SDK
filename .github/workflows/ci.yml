@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate-package:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer || true
+
+      - name: Show Swift version
+        run: swift --version
+
+      - name: Validate SwiftPM manifest
+        run: swift package dump-package
+
+      - name: Resolve dependencies
+        run: swift package resolve
+
+      - name: Build SwiftCode SDK
+        run: swift build -c release
+
+      - name: Run Swift tests
+        run: swift test
+
+  validate-typescript-sdk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build and Test TypeScript SDK
+        run: |
+          cd TypeScript/package
+          npm ci || npm install
+          npm run build
+          npm test
